@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACAD Assistant - Academic AI Assistant for Lecturers</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @keyframes scanline {
+      0% { top: 0%; opacity: 0.8; }
+      50% { top: 96%; opacity: 1; }
+      100% { top: 0%; opacity: 0.8; }
+    }
+    .laser-scan {
+      position: absolute;
+      left: 4%;
+      width: 92%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #22c55e, #4ade80, #22c55e, transparent);
+      box-shadow: 0 0 14px #22c55e, 0 0 25px #4ade80;
+      animation: scanline 2.2s ease-in-out infinite;
+    }
+    .hud-corner {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-color: #22c55e;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-850 border-b border-slate-700/80 sticky top-0 z-50 shadow-lg backdrop-blur bg-slate-900/90">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Logo & Academic Badge -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-emerald-500 flex items-center justify-center shadow-md">
+          <i data-lucide="graduation-cap" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold tracking-tight text-white">ACAD <span class="text-emerald-400">Assistant</span></h1>
+            <span class="text-xs bg-emerald-500/20 text-emerald-300 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">AI Dosen</span>
+          </div>
+          <p class="text-xs text-slate-400">Manajemen Proyek TI • Kelas <span class="text-emerald-400 font-semibold">07TPLP003</span> (32 Mhs)</p>
+        </div>
+      </div>
+
+      <!-- Class Filters (PRD Spec) -->
+      <div class="flex items-center flex-wrap gap-2 text-xs">
+        <div class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 flex items-center space-x-1.5">
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>2026/2027 Ganjil</span>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 flex items-center space-x-1.5">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>Sem 7 • TI S1</span>
+        </div>
+        
+        <!-- Active Meeting Switcher -->
+        <div class="flex items-center space-x-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-300">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span class="text-slate-400">Sesi:</span>
+          <select id="meetingSelect" onchange="changeActiveMeeting(this.value)" class="bg-transparent text-emerald-400 font-medium focus:outline-none cursor-pointer">
+            <option value="5" class="bg-slate-800 text-white">P5: Cost Estimation & EVA (Aktif)</option>
+            <option value="1" class="bg-slate-800 text-white">P1: Pengantar Manajemen Proyek</option>
+            <option value="2" class="bg-slate-800 text-white">P2: Project Charter & Scope</option>
+            <option value="3" class="bg-slate-800 text-white">P3: Work Breakdown Structure</option>
+            <option value="4" class="bg-slate-800 text-white">P4: Critical Path Method</option>
+            <option value="6" class="bg-slate-800 text-white">P6: Manajemen Risiko</option>
+            <option value="7" class="bg-slate-800 text-white">P7: QA & Agile Scrum</option>
+            <option value="8" class="bg-slate-800 text-white">P8: Evaluasi Tengah Semester</option>
+          </select>
+        </div>
+
+        <!-- Localhost & LAN Status Badge -->
+        <div class="flex items-center space-x-1 px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Localhost:8000</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- NAVIGATION TABS -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800">
+      <nav class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2 text-sm font-medium scrollbar-none" id="navTabs">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>1. Beranda & Monitoring</span>
+        </button>
+        <button onclick="switchTab('attendance')" id="tab-attendance" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="scan-line" class="w-4 h-4"></i>
+          <span>2. Presensi Scan KTM</span>
+        </button>
+        <button onclick="switchTab('autoquiz')" id="tab-autoquiz" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="brain-circuit" class="w-4 h-4"></i>
+          <span>3. AutoQuiz Pemahaman</span>
+        </button>
+        <button onclick="switchTab('accessibility')" id="tab-accessibility" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="headphones" class="w-4 h-4"></i>
+          <span>4. Scan TTS (Audio)</span>
+        </button>
+        <button onclick="switchTab('chatbot')" id="tab-chatbot" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="bot" class="w-4 h-4"></i>
+          <span>5. Chat AI Bot (RAG)</span>
+        </button>
+        <button onclick="switchTab('students')" id="tab-students" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>6. Mahasiswa 07TPLP003</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+    <!-- ============================================== -->
+    <!-- TAB 1: HOME BERANDA & MONITORING (FITUR 1)      -->
+    <!-- ============================================== -->
+    <section id="view-dashboard" class="tab-content space-y-6">
+      
+      <!-- EARLY ALERT BANNER (PRD Specification) -->
+      <div id="earlyAlertBanner" class="hidden bg-amber-950/40 border border-amber-500/50 rounded-xl p-4 flex items-start space-x-3.5 shadow-lg animate-fade-in">
+        <div class="p-2 bg-amber-500/20 rounded-lg text-amber-400 mt-0.5">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-sm font-semibold text-amber-300">Peringatan Dini Pemahaman Kelas (Early Alert)</h3>
+          <p id="earlyAlertText" class="text-xs text-amber-200/90 mt-1">Rata-rata kuis pada materi WBS berada di bawah 50% (Kritis). Direkomendasikan melakukan review materi di awal perkuliahan berikutnya.</p>
+        </div>
+        <button onclick="switchTab('autoquiz')" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 font-medium transition">
+          Lihat Analitik
+        </button>
+      </div>
+
+      <!-- 4 KPI CARDS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- KPI 1: Kehadiran Minggu Ini -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm hover:border-emerald-500/40 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Presensi Minggu Ini</span>
+            <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <i data-lucide="user-check" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline space-x-2">
+            <span id="kpi-attendance-rate" class="text-3xl font-extrabold text-white">--%</span>
+            <span id="kpi-attendance-count" class="text-xs text-slate-400">(0/32 Mhs)</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Sesi Aktif: <span id="kpi-active-meeting" class="text-emerald-400 font-medium">P5</span></p>
+        </div>
+
+        <!-- KPI 2: Kuis Aktif -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm hover:border-indigo-500/40 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Kuis Terdaftar</span>
+            <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline space-x-2">
+            <span id="kpi-quizzes-count" class="text-3xl font-extrabold text-white">--</span>
+            <span class="text-xs text-slate-400">evaluasi kilat</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Metrik psikometrik otomatis</p>
+        </div>
+
+        <!-- KPI 3: Topik Perlu Review -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm hover:border-amber-500/40 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Materi Perlu Review</span>
+            <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+              <i data-lucide="alert-circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline space-x-2">
+            <span id="kpi-need-review" class="text-3xl font-extrabold text-amber-400">--</span>
+            <span class="text-xs text-slate-400">sub-topik</span>
+          </div>
+          <p class="text-xs text-amber-400/80 mt-1">Indeks Kesulitan $P &lt; 0.40$</p>
+        </div>
+
+        <!-- KPI 4: Mahasiswa At-Risk -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm hover:border-rose-500/40 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Mahasiswa At-Risk</span>
+            <div class="p-2 rounded-lg bg-rose-500/10 text-rose-400">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline space-x-2">
+            <span id="kpi-at-risk" class="text-3xl font-extrabold text-rose-400">--</span>
+            <span class="text-xs text-slate-400">mahasiswa</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Klaster K-Means (Butuh Remedial)</p>
+        </div>
+
+      </div>
+
+      <!-- CHARTS SECTION: ATTENDANCE TREND & QUIZ MASTERY -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Attendance Trend Chart -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-sm font-semibold text-white">Grafik Tren Kehadiran Pertemuan</h2>
+              <p class="text-xs text-slate-400">Perbandingan tingkat absensi mahasiswa per pertemuan</p>
+            </div>
+            <span class="text-xs bg-slate-700/70 text-slate-300 px-2.5 py-1 rounded-md">8 Pertemuan</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="attendanceTrendChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Quiz Mastery Bar Chart -->
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-sm font-semibold text-white">Tingkat Ketuntasan Kuis Materi</h2>
+              <p class="text-xs text-slate-400">Rerata nilai kuis per pertemuan (Garis merah: Batas Peringatan 50%)</p>
+            </div>
+            <span class="text-xs bg-slate-700/70 text-slate-300 px-2.5 py-1 rounded-md">Topic Mastery</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="quizMasteryChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CRITICAL SUBTOPICS & RECENT ACTION CARD -->
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-sm font-semibold text-white">Daftar Subtopik Kritis (Item Difficulty Index $P &lt; 0.40$)</h2>
+            <p class="text-xs text-slate-400">Materi yang terbukti belum dikuasai mayoritas kelas pada evaluasi sebelumnya</p>
+          </div>
+          <button onclick="askChatbotTopicRemedial()" class="text-xs flex items-center space-x-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-lg transition font-medium">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Minta Kisi Remedial ke AI</span>
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-2.5 px-3">Sub-Topik</th>
+                <th class="py-2.5 px-3">Indeks Kesulitan (P)</th>
+                <th class="py-2.5 px-3">Daya Pembeda (D)</th>
+                <th class="py-2.5 px-3">Status Kelas</th>
+                <th class="py-2.5 px-3">Rekomendasi</th>
+              </tr>
+            </thead>
+            <tbody id="criticalSubtopicsTableBody" class="divide-y divide-slate-700/60">
+              <!-- Loaded via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ============================================== -->
+    <!-- TAB 2: FITUR SCAN KTM – OTOMATIS PRESENSI      -->
+    <!-- ============================================== -->
+    <section id="view-attendance" class="tab-content hidden space-y-6">
+      
+      <!-- DUAL-PANE HUD CONTAINER (PRD FR-01 & FR-05) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- PANE KIRI: Live Camera Feed with Laser Scanner HUD (7 Cols) -->
+        <div class="lg:col-span-7 bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <h3 class="text-sm font-semibold text-white">Live Scanner Kamera KTM</h3>
+                <span class="text-xs text-slate-400">Webcam Touchless Presensi</span>
+              </div>
+              <div class="flex items-center flex-wrap gap-2">
+                <!-- Universal Reset Selector for ANY student -->
+                <div class="flex items-center space-x-1.5 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs">
+                  <span class="text-slate-400 text-[11px] whitespace-nowrap">Reset Mhs:</span>
+                  <select id="resetStudentSelector" class="bg-transparent text-amber-300 font-medium focus:outline-none max-w-[160px] truncate cursor-pointer text-xs">
+                    <!-- Populated via JS with 32 students -->
+                  </select>
+                  <button onclick="resetSelectedStudent()" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold px-2 py-0.5 rounded text-[11px] border border-amber-500/30 transition shadow" title="Reset mahasiswa yang dipilih ke Belum Hadir">
+                    Reset
+                  </button>
+                </div>
+
+                <button onclick="resetAllAttendance()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-600 transition flex items-center space-x-1" title="Reset seluruh mahasiswa sesi ini ke Belum Hadir">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                  <span>Reset Semua (32 Mhs)</span>
+                </button>
+                <button id="cameraToggleBtn" onclick="toggleWebcam()" class="text-xs flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-medium transition shadow">
+                  <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                  <span id="cameraBtnText">Aktifkan Kamera</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Viewport Container with HUD Frame -->
+            <div class="relative w-full aspect-video bg-black/80 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center shadow-inner">
+              <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+              <canvas id="captureCanvas" class="hidden"></canvas>
+              
+              <!-- Placeholder when camera is off -->
+              <div id="cameraPlaceholder" class="flex flex-col items-center justify-center p-6 text-center">
+                <div class="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-3 text-slate-400">
+                  <i data-lucide="credit-card" class="w-8 h-8"></i>
+                </div>
+                <p class="text-sm font-medium text-slate-300">Arahkan Kartu Tanda Mahasiswa (KTM) ke Bingkai</p>
+                <p class="text-xs text-slate-500 mt-1 max-w-sm">NIM akan diekstrak otomatis menggunakan EasyOCR dan ZXing barcode scanner.</p>
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                  <button onclick="testSampleCard('sample_unpam_aditya.jpg')" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-600 transition">
+                    🧪 Uji Sampel KTM Aditya
+                  </button>
+                  <button onclick="testSampleCard('sample_ktm.jpg')" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-600 transition">
+                    🧪 Uji Sampel Sintetis
+                  </button>
+                </div>
+              </div>
+
+              <!-- LASER SCANNER & HUD OVERLAY (When active) -->
+              <div id="scannerHudOverlay" class="absolute inset-0 pointer-events-none hidden">
+                <!-- Dimmed outside overlay -->
+                <div class="absolute inset-0 bg-slate-950/40"></div>
+                
+                <!-- Center Target Card Box (65% width, 60% height) -->
+                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 sm:w-3/4 h-3/5 border-2 border-emerald-500/80 rounded-lg shadow-[0_0_20px_rgba(34,197,94,0.3)] bg-transparent">
+                  <!-- HUD Corner Brackets -->
+                  <div class="hud-corner top-0 left-0 border-t-4 border-l-4 -mt-1 -ml-1 rounded-tl"></div>
+                  <div class="hud-corner top-0 right-0 border-t-4 border-r-4 -mt-1 -mr-1 rounded-tr"></div>
+                  <div class="hud-corner bottom-0 left-0 border-b-4 border-l-4 -mb-1 -ml-1 rounded-bl"></div>
+                  <div class="hud-corner bottom-0 right-0 border-b-4 border-r-4 -mb-1 -mr-1 rounded-br"></div>
+                  
+                  <!-- Moving Laser line -->
+                  <div class="laser-scan"></div>
+                  
+                  <!-- Center Target Label -->
+                  <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-900/80 px-2 py-0.5 rounded text-[10px] text-emerald-300 font-mono tracking-wider border border-emerald-500/30">
+                    POSISIKAN KTM DI DALAM KOTAK
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Bottom Scan Controls & Upload Option -->
+          <div class="mt-4 pt-3 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-400">Mode Deteksi:</span>
+              <span class="bg-emerald-500/10 text-emerald-400 font-medium px-2 py-0.5 rounded border border-emerald-500/20">Continuous Loop + Audio Beep</span>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <!-- Upload Image fallback -->
+              <label class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-600 font-medium transition flex items-center space-x-1">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                <span>Unggah Foto KTM</span>
+                <input type="file" accept="image/*" class="hidden" onchange="uploadCardImage(this)">
+              </label>
+              <button onclick="captureCurrentFrame()" id="btnManualScan" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span>Scan Sekarang</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE KANAN: Real-time Alert & Verification Card (5 Cols) -->
+        <div class="lg:col-span-5 bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-semibold text-white">Status Verifikasi Presensi</h3>
+              <span id="scanStatusBadge" class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full font-medium">Standby</span>
+            </div>
+
+            <!-- RESULT CARD HUD -->
+            <div id="attendanceAlertCard" class="bg-slate-900/90 border border-slate-700 rounded-xl p-5 text-center min-h-[220px] flex flex-col items-center justify-center transition-all duration-300">
+              <div id="alertIconBox" class="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-3 text-slate-400">
+                <i data-lucide="fingerprint" class="w-7 h-7"></i>
+              </div>
+              <h4 id="alertHeadline" class="text-base font-bold text-slate-300">Menunggu Pemindaian Kartu</h4>
+              <p id="alertSubtext" class="text-xs text-slate-400 mt-1">Arahkan KTM mahasiswa atau pilih tombol 'Uji Sampel' untuk demonstrasi otomatis.</p>
+              
+              <!-- Student Info Details (Shown upon detection) -->
+              <div id="alertStudentDetails" class="hidden mt-4 w-full text-left bg-slate-950/60 rounded-lg p-3 border border-slate-800 text-xs space-y-1.5">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Nama Mahasiswa:</span>
+                  <span id="resStudentName" class="font-bold text-white text-right">--</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Nomor Induk (NIM):</span>
+                  <span id="resStudentNim" class="font-mono text-emerald-400 font-bold">--</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Waktu Masuk:</span>
+                  <span id="resTimestamp" class="text-slate-200">--</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Metode Verifikasi:</span>
+                  <span id="resMethod" class="text-indigo-400 font-medium">--</span>
+                </div>
+                <div class="pt-2 border-t border-slate-800">
+                  <button id="btnResetScannedCard" onclick="resetCurrentlyScannedStudent()" class="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-semibold py-1.5 px-3 rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow" title="Reset mahasiswa ini agar berstatus Belum Hadir untuk uji scan ulang">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span id="btnResetScannedText">Reset Mahasiswa Ini (Uji Scan Ulang)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live OCR Text Preview HUD (PRD Spec) -->
+            <div class="mt-4 bg-slate-900/70 border border-slate-800 rounded-xl p-3 text-xs">
+              <div class="flex items-center justify-between text-slate-400 mb-1.5">
+                <span class="font-mono text-[11px] uppercase">Preview Teks Kamera Mentah:</span>
+                <span id="ocrLatency" class="text-[10px] text-slate-500">Latency: -- ms</span>
+              </div>
+              <div id="rawOcrTokens" class="font-mono text-slate-300 bg-black/40 rounded p-2 text-[11px] min-h-[38px] flex flex-wrap gap-1 items-center">
+                <span class="text-slate-500 italic text-[11px]">Belum ada teks terbaca...</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Quick Audio Notification toggle -->
+          <div class="mt-4 pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+            <div class="flex items-center space-x-1.5">
+              <i data-lucide="volume-2" class="w-4 h-4 text-emerald-400"></i>
+              <span>Audio Feedback Otomatis Aktif</span>
+            </div>
+            <button onclick="playBeep(1400)" class="text-[11px] text-emerald-400 hover:underline">Tes Suara Beep</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LIVE ATTENDANCE TABLE (32 STUDENTS KELAS 07TPLP003) -->
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 class="text-sm font-semibold text-white">Daftar Presensi Mahasiswa Sesi Ini</h3>
+            <p class="text-xs text-slate-400">Status kehadiran mahasiswa Kelas 07TPLP003 (Universitas Pamulang)</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span id="attendanceSummaryBadge" class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-medium">
+              Hadir: 0 / 32
+            </span>
+            <button onclick="refreshAttendanceTable()" class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 transition" title="Muat Ulang">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-[380px] overflow-y-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 sticky top-0 text-slate-400 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-2.5 px-3">No</th>
+                <th class="py-2.5 px-3">NIM</th>
+                <th class="py-2.5 px-3">Nama Mahasiswa</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3">Waktu Presensi</th>
+                <th class="py-2.5 px-3">Metode</th>
+                <th class="py-2.5 px-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceTableBody" class="divide-y divide-slate-700/60">
+              <!-- Loaded via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ============================================== -->
+    <!-- TAB 3: FITUR AUTOQUIZ PEMAHAMAN               -->
+    <!-- ============================================== -->
+    <section id="view-autoquiz" class="tab-content hidden space-y-6">
+      
+      <!-- AutoQuiz Creation Section -->
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-semibold text-white">AutoQuiz Pemahaman Materi Perkuliahan</h3>
+            <p class="text-xs text-slate-400">Buat 3–5 butir soal pilihan ganda dari topik ajar atau langsung unggah file PDF materi kuliah</p>
+          </div>
+          <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-md font-medium">Fitur 3 PRD</span>
+        </div>
+
+        <!-- FITUR SUBMIT FILE PDF UNTUK QUIZ OTOMATIS (Request User) -->
+        <div class="mb-5 p-4 rounded-xl bg-slate-900/90 border-2 border-dashed border-indigo-500/50 hover:border-indigo-400 transition flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center space-x-3 text-left">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-500/30">
+              <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white">Buat Kuis Otomatis Langsung dari Dokumen PDF</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Unggah slide modul/buku perkuliahan (PDF) & AI langsung mengekstrak materi untuk membuat soal.</p>
+              <span id="pdfUploadStatusText" class="text-[11px] text-emerald-400 font-medium hidden"></span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+            <input type="file" id="quizPdfFileInput" accept=".pdf" class="hidden" onchange="handleQuizPdfUpload(this)">
+            <button onclick="document.getElementById('quizPdfFileInput').click()" id="btnUploadPdfQuiz" class="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition shadow flex items-center justify-center space-x-1.5">
+              <i data-lucide="upload" class="w-4 h-4"></i>
+              <span id="btnUploadPdfQuizText">Unggah PDF Materi Kuliah</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="md:col-span-2 space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Topik Perkuliahan / Materi Ajar:</label>
+              <input type="text" id="quizTopicInput" value="Earned Value Analysis (EVA) & Cost Variance" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Bahan Ajar / Teks Tambahan (Opsional):</label>
+              <textarea id="quizMaterialInput" rows="2" placeholder="Salin kutipan materi silabus atau ringkasan modul P5..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"></textarea>
+            </div>
+          </div>
+          
+          <div class="flex flex-col justify-between space-y-3 bg-slate-900/60 p-4 rounded-xl border border-slate-700/70">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Jumlah Butir Soal:</label>
+              <select id="quizCountSelect" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                <option value="3">3 Butir Soal (Rekomendasi Kilat 5 Mnt)</option>
+                <option value="5">5 Butir Soal (Komprehensif 10 Mnt)</option>
+              </select>
+            </div>
+            <button onclick="generateAutoQuiz()" id="btnGenerateQuiz" class="w-full bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-medium py-2 px-4 rounded-lg text-xs transition flex items-center justify-center space-x-2 shadow-md">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Buat Quick Quiz Pertemuan Ini</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- GENERATED QUESTIONS PREVIEW -->
+        <div id="quizPreviewContainer" class="hidden mt-6 pt-5 border-t border-slate-700 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Hasil Pembuatan Soal & Kunci Jawaban:</h4>
+            <button onclick="approveAndPublishQuiz()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-1.5 rounded-lg transition shadow">
+              ✓ Setujui & Simpan Kuis ke Kelas
+            </button>
+          </div>
+          <div id="questionsPreviewList" class="space-y-3">
+            <!-- Questions rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE DATA MINING STUDIO & QUIZ SIMULATOR -->
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-white">Studio Analitik Penambangan Data (Data Mining)</h3>
+            <p class="text-xs text-slate-400">Analisis psikometrik butir soal kuis aktif dan klastering risiko mahasiswa</p>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <select id="activeQuizSelector" onchange="loadQuizAnalytics(this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
+              <!-- Quizzes options -->
+            </select>
+            <button onclick="simulateClassQuiz()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1 shadow">
+              <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>⚡ Simulasikan Respons Kelas (32 Mhs)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PSYCHOMETRIC METRICS TABLE (P and D) -->
+        <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-700/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Tabel Indeks Butir Soal Psikometrik</h4>
+            <span id="quizClassAvgBadge" class="text-xs bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded border border-slate-700">Rerata Nilai: --%</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950/70 text-slate-400 uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th class="py-2 px-3">No</th>
+                  <th class="py-2 px-3">Sub-Topik Spesifik</th>
+                  <th class="py-2 px-3">Tingkat Kesulitan (P)</th>
+                  <th class="py-2 px-3">Daya Pembeda (D)</th>
+                  <th class="py-2 px-3">Status Evaluasi</th>
+                </tr>
+              </thead>
+              <tbody id="psychometricsTableBody" class="divide-y divide-slate-800">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- STUDENT RISK CLUSTERING (K-MEANS) VISUALIZATION -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          
+          <!-- Mastered Cluster -->
+          <div class="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-emerald-400 uppercase">Segmen 1: Mastered</span>
+              <span id="clusterMasteredCount" class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">-- Mhs</span>
+            </div>
+            <p class="text-xs text-emerald-200/80">Pemahaman tinggi & kehadiran konsisten di atas 85%.</p>
+          </div>
+
+          <!-- Borderline Cluster -->
+          <div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-amber-400 uppercase">Segmen 2: Borderline</span>
+              <span id="clusterBorderlineCount" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">-- Mhs</span>
+            </div>
+            <p class="text-xs text-amber-200/80">Cukup menguasai, namun butuh pendampingan di topik kritis.</p>
+          </div>
+
+          <!-- At-Risk Cluster -->
+          <div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-rose-400 uppercase">Segmen 3: At-Risk</span>
+              <span id="clusterAtRiskCount" class="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">-- Mhs</span>
+            </div>
+            <p class="text-xs text-rose-200/80">Prioritas intervensi: Berisiko gagal karena absen/skor kuis rendah.</p>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================== -->
+    <!-- TAB 4: FITUR AKSESIBILITAS (SCAN TEXT TO SPEECH) -->
+    <!-- ============================================== -->
+    <section id="view-accessibility" class="tab-content hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Upload / Scanner Document (5 Cols) -->
+        <div class="lg:col-span-5 bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm space-y-4">
+          <div>
+            <h3 class="text-sm font-semibold text-white">Unggah Dokumen Ajar / Foto Buku</h3>
+            <p class="text-xs text-slate-400">Ekstraksi teks multibahasa (ID/EN) untuk dibacakan via audio suara</p>
+          </div>
+
+          <!-- Dropzone -->
+          <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 rounded-xl p-6 text-center cursor-pointer transition bg-slate-900/40 relative">
+            <input type="file" id="docFileInput" accept=".pdf,image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleDocFileUpload(this)">
+            <div class="flex flex-col items-center">
+              <i data-lucide="file-up" class="w-10 h-10 text-emerald-400 mb-2"></i>
+              <p class="text-xs font-semibold text-slate-200">Klik atau Tarik Dokumen ke Sini</p>
+              <p class="text-[11px] text-slate-400 mt-1">Mendukung format PDF, JPG, dan PNG</p>
+            </div>
+          </div>
+
+          <!-- Quick Sample buttons for quick reading -->
+          <div>
+            <span class="text-xs text-slate-400 font-medium block mb-2">Atau gunakan teks materi perkuliahan:</span>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="loadSampleText('eva')" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2.5 py-1 rounded transition">
+                📖 Materi EVA (Pertemuan 5)
+              </button>
+              <button onclick="loadSampleText('wbs')" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2.5 py-1 rounded transition">
+                📖 Materi WBS 100% Rule
+              </button>
+            </div>
+          </div>
+
+          <!-- Audio Player Controls (PRD Specification) -->
+          <div class="bg-slate-900/90 rounded-xl p-4 border border-slate-700/80 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+                <i data-lucide="volume-2" class="w-4 h-4 text-emerald-400"></i>
+                <span>Pemutar Audio TTS</span>
+              </span>
+              <span id="ttsStatusIndicator" class="text-[11px] text-slate-400">Siap memutar</span>
+            </div>
+
+            <!-- Play / Pause / Stop Buttons -->
+            <div class="flex items-center justify-center space-x-3">
+              <button onclick="playTTS()" id="ttsPlayBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white p-3 rounded-full transition shadow-lg flex items-center justify-center">
+                <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+              </button>
+              <button onclick="pauseTTS()" id="ttsPauseBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-full transition flex items-center justify-center">
+                <i data-lucide="pause" class="w-5 h-5"></i>
+              </button>
+              <button onclick="stopTTS()" id="ttsStopBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-3 rounded-full transition flex items-center justify-center">
+                <i data-lucide="square" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <!-- Speed Adjustment Slider (0.75x - 2.0x as per PRD) -->
+            <div>
+              <div class="flex justify-between text-xs text-slate-400 mb-1">
+                <span>Kecepatan Suara:</span>
+                <span id="speedValueText" class="text-emerald-400 font-bold">1.0x</span>
+              </div>
+              <input type="range" id="ttsSpeedSlider" min="0.75" max="2.0" step="0.25" value="1.0" oninput="updateTtsSpeed(this.value)" class="w-full accent-emerald-500 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+                <span>0.75x</span>
+                <span>1.0x</span>
+                <span>1.5x</span>
+                <span>2.0x</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Extracted Text Editor (7 Cols) -->
+        <div class="lg:col-span-7 bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-semibold text-white">Editor Teks Hasil Ekstraksi</h3>
+              <div class="flex items-center space-x-2 text-xs text-slate-400">
+                <span id="docWordCount">0 Kata</span>
+                <button onclick="copyDocText()" class="hover:text-emerald-400 transition" title="Salin Teks">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <textarea id="docExtractedTextArea" rows="15" placeholder="Teks hasil scan OCR dokumen akan muncul di sini dan dapat diedit oleh Dosen sebelum dibacakan..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-emerald-500 font-sans"></textarea>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+            <span>💡 *Aksen:* Neural Text-to-Speech Bahasa Indonesia alami.</span>
+            <button onclick="playTTS()" class="text-xs bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition font-medium">
+              Dengarkan Bacaan Ini ▶
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================== -->
+    <!-- TAB 5: FITUR CHAT AI BOT (RAG LOCAL DATABASE)  -->
+    <!-- ============================================== -->
+    <section id="view-chatbot" class="tab-content hidden space-y-4">
+      
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl shadow-sm flex flex-col h-[650px] overflow-hidden">
+        
+        <!-- Chat Header -->
+        <div class="p-4 border-b border-slate-700/80 bg-slate-850 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shadow">
+              <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">ACAD AI Assistant (RAG Grounded)</h3>
+              <p class="text-xs text-slate-400">Terhubung langsung ke basis data Kelas 07TPLP003 & Google Gemini</p>
+            </div>
+          </div>
+          <button onclick="clearChatHistory()" class="text-xs text-slate-400 hover:text-slate-200 transition">
+            Bersihkan Chat
+          </button>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div id="chatMessagesBox" class="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
+          
+          <!-- Welcome message -->
+          <div class="flex items-start space-x-3 max-w-2xl">
+            <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 text-white">
+              <i data-lucide="bot" class="w-4 h-4"></i>
+            </div>
+            <div class="bg-slate-900 border border-slate-700/80 rounded-2xl p-4 text-slate-200 space-y-2 shadow-sm">
+              <p class="font-semibold text-emerald-400 text-xs">Halo Bapak/Ibu Dosen!</p>
+              <p>Saya adalah <strong>ACAD Assistant</strong>. Saya siap membantu Anda berkonsultasi mengenai:</p>
+              <ul class="list-disc list-inside space-y-1 text-slate-300">
+                <li>Rekap presensi tatap muka dan mahasiswa di bawah 75%</li>
+                <li>Rangkuman kuis dan deteksi topik kritis (*Need Review*)</li>
+                <li>Rekomendasi remedial mahasiswa kategori *At-Risk*</li>
+                <li>Perancangan kisi-kisi dan ringkasan silabus materi</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Quick Prompt Suggestions (PRD Spec) -->
+        <div class="px-4 py-2 border-t border-slate-700/60 bg-slate-900/60 flex items-center space-x-2 overflow-x-auto text-[11px] scrollbar-none">
+          <span class="text-slate-400 whitespace-nowrap">Pertanyaan Cepat:</span>
+          <button onclick="sendQuickPrompt('Tampilkan mahasiswa yang kehadirannya di bawah 75% di kelas ini')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-full border border-slate-700 transition">
+            🔍 Presensi &lt; 75%
+          </button>
+          <button onclick="sendQuickPrompt('Siapa saja mahasiswa yang masuk kategori At-Risk menurut klastering K-Means?')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-full border border-slate-700 transition">
+            ⚠️ Mahasiswa At-Risk
+          </button>
+          <button onclick="sendQuickPrompt('Rangkum topik mana yang paling sulit di kuis dan buatkan bahan review 10 menit')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-full border border-slate-700 transition">
+            📝 Materi Sulit & Bahan Review
+          </button>
+          <button onclick="sendQuickPrompt('Buatkan kisi-kisi dan 3 butir soal remedial untuk materi WBS dan Critical Path')" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-full border border-slate-700 transition">
+            🎯 Soal Remedial
+          </button>
+        </div>
+
+        <!-- Input Bar -->
+        <div class="p-3 border-t border-slate-700 bg-slate-850 flex items-center space-x-2">
+          <input type="text" id="chatInput" placeholder="Tanyakan apa saja seputar data kelas Anda..." onkeydown="if(event.key === 'Enter') sendChatMessage()" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          <button onclick="sendChatMessage()" id="btnSendChat" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-xl transition shadow flex items-center justify-center">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================== -->
+    <!-- TAB 6: DATA MAHASISWA (KELAS 07TPLP003)        -->
+    <!-- ============================================== -->
+    <section id="view-students" class="tab-content hidden space-y-6">
+      
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-white">Daftar Mahasiswa Terdaftar (Kelas 07TPLP003)</h3>
+            <p class="text-xs text-slate-400">Total 32 Mahasiswa Aktif Universitas Pamulang berdasarkan pedoman resmi</p>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <input type="text" id="studentSearchInput" oninput="filterStudentsTable(this.value)" placeholder="Cari Nama / NIM..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white focus:outline-none text-xs">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900 sticky top-0 text-slate-400 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-2.5 px-3">No</th>
+                <th class="py-2.5 px-3">NIM</th>
+                <th class="py-2.5 px-3">Nama Mahasiswa</th>
+                <th class="py-2.5 px-3">Tingkat Kehadiran</th>
+                <th class="py-2.5 px-3">Rerata Kuis</th>
+                <th class="py-2.5 px-3">Klaster Risiko (K-Means)</th>
+              </tr>
+            </thead>
+            <tbody id="allStudentsTableBody" class="divide-y divide-slate-700/60">
+              <!-- Loaded via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-auto border-t border-slate-800 py-3 bg-slate-900/60 text-center text-xs text-slate-500">
+    ACAD Assistant &copy; 2026 • AI-Powered Academic Assistant for Lecturers • Universitas Pamulang Kelas 07TPLP003
+  </footer>
+
+  <!-- SCRIPT APPLICATION LOGIC -->
+  <script src="/static/app.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

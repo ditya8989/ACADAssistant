@@ -1,0 +1,28 @@
+# Core Web Framework
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-multipart>=0.0.10
+pydantic>=2.8.0
+
+# HTTP & AI Integration
+requests>=2.31.0
+
+# Data Processing & Machine Learning / Data Mining
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+scipy>=1.13.0
+
+# PDF & Document Processing
+pypdf>=5.0.0
+Pillow>=10.0.0
+
+# Computer Vision & OCR
+opencv-python>=4.10.0
+easyocr>=1.7.1
+rapidfuzz>=3.9.0
+zxing-cpp>=2.2.0
+
+# PyTorch (required by EasyOCR)
+torch>=2.2.0
+torchvision>=0.17.0
